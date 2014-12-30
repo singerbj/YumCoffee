@@ -63,6 +63,12 @@ get '/coffee' do
     res.to_json
 end
 
+get '/coffeeAndRatings' do
+    res = settings.conn.exec("select * from coffee join rating on coffee.id = rating.coffee_id;")
+    res.to_json
+end
+
+
 get '/coffee/:id' do |id|        
     res = settings.conn.exec("Select * from coffee where id = #{id};")
     res.to_json

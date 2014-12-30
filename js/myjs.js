@@ -24,7 +24,23 @@ var Coffees = Backbone.Collection.extend({
 });
 
 var Coffee = Backbone.Model.extend({
-    urlRoot: "/coffee"
+    urlRoot: "/coffee",
+    fetchCurrent: function (id, options) {
+        options = options || {};
+        if (options.url === undefined) {
+            options.url = this.urlRoot + '/' + id + "/ratings";
+        }
+
+        return Backbone.Model.prototype.fetch.call(this, options);
+    }
+});
+
+var Ratings = Backbone.Collection.extend({
+    url: "/rating"
+});
+
+var Rating = Backbone.Model.extend({
+    urlRoot: "/rating"
 });
 
 //////////////////////////////////////////////////////////////////////////
@@ -34,18 +50,37 @@ var CoffeeList = Backbone.View.extend({
     render: function(){
         var that = this;
         var coffees = new Coffees();
+
         coffees.fetch({
             success: function(coffees){
-                window.coffees = _.sortBy(coffees.toJSON(), function(o) {
-                    return o.id;
+                coffees = coffees.toJSON();
+
+                var promises = [];
+                coffees.forEach(function(coffee){
+                    var deferred = Q.defer();
+                    promises.push(deferred.promise);
+                    var coffeeRatings = new Coffee({id: coffee.id});
+                    coffeeRatings.fetchCurrent(coffee.id, {
+                        success: function(ratings){
+                            coffee.ratings = ratings.toJSON();
+                            deferred.resolve();
+                        }
+                    });
                 });
-                var template = _.template($('#coffee-list-template').html());
-                that.$el.html(template);
+
+                Q.all(promises).spread(function () {
+                    window.coffees = _.sortBy(coffees, function(o) {
+                        return parseInt(o.id, 10);
+                    });
+                    var template = _.template($('#coffee-list-template').html());
+                    that.$el.html(template);
+                });
+
             }
         });
     },
     events: {
-        'click .delete': 'deleteCoffee'
+        'click .coffeeDelete': 'deleteCoffee'
     },
     deleteCoffee: function(ev){
         var coffeeid = parseInt($(ev.currentTarget)['0'].attributes['2'].value, 10);
@@ -54,10 +89,10 @@ var CoffeeList = Backbone.View.extend({
         if(r) {
             coffee.destroy({
                 success: function () {
-                    router.navigate('#/', {trigger: true});
+                    router.navigate('#/coffee', {trigger: true});
                 },
                 error: function () {
-                    router.navigate('#/', {trigger: true});
+                    router.navigate('#/coffee', {trigger: true});
                 }
             });
         }
@@ -98,10 +133,10 @@ var EditCoffee = Backbone.View.extend({
         var coffee = new Coffee();
         coffee.save(coffeeDetails, {
             success: function(){
-                router.navigate('#/', {trigger: true});
+                router.navigate('#/coffee', {trigger: true});
             },
             error: function(){
-                router.navigate('#/', {trigger: true});
+                router.navigate('#/coffee', {trigger: true});
             }
         });
         return false;
@@ -112,20 +147,116 @@ var editCoffee = new EditCoffee();
 
 //////////////////////////////////////////////////////////////////////////
 
+var RatingList = Backbone.View.extend({
+    el: '.page',
+    render: function(){
+        var that = this;
+        var ratings = new Ratings();
+        ratings.fetch({
+            success: function(ratings){
+                window.ratings = _.sortBy(ratings.toJSON(), function(o) {
+                    return parseInt(o.coffee_id, 10);
+                });
+                var template = _.template($('#rating-list-template').html());
+                that.$el.html(template);
+            }
+        });
+    },
+    events: {
+        'click .ratingDelete': 'deleteRating'
+    },
+    deleteRating: function(ev){
+        var ratingid = parseInt($(ev.currentTarget)['0'].attributes['2'].value, 10);
+        var rating = new Rating({id: ratingid});
+        var r = window.confirm("Are you sure?");
+        if(r) {
+            rating.destroy({
+                success: function () {
+                    router.navigate('#/rating', {trigger: true});
+                },
+                error: function () {
+                    router.navigate('#/rating', {trigger: true});
+                }
+            });
+        }
+    }
+});
+
+var ratingList = new RatingList();
+
+//////////////////////////////////////////////////////////////////////////
+
+var EditRating= Backbone.View.extend({
+    el: '.page',
+    reset: function(){
+        this.render();
+    },
+    render: function(options){
+        var that = this;
+        if(options.id) {
+            var rating = new Rating({id: options.id});
+            rating.fetch({
+                success: function(rating) {
+                    window.rating = rating.toJSON()[0];
+                    var template = _.template($('#rating-form-template').html());
+                    that.$el.html(template);
+                }
+            });
+        }else{
+            window.rating = null;
+            var template = _.template($('#rating-form-template').html());
+            that.$el.html(template);
+        }
+    },
+    events: {
+        'submit .ratingForm': 'saveRating'
+    },
+    saveRating: function(ev){
+        var ratingDetails = $(ev.currentTarget).serializeObject();
+        var rating = new Rating();
+        rating.save(ratingDetails, {
+            success: function(){
+                router.navigate('#/rating', {trigger: true});
+            },
+            error: function(){
+                router.navigate('#/rating', {trigger: true});
+            }
+        });
+        return false;
+    }
+});
+
+var editRating = new EditRating();
+
+//////////////////////////////////////////////////////////////////////////
+
 var Router = Backbone.Router.extend({
    routes: {
        '': 'home',
-       'new': 'editCoffee',
-       'edit/:id': 'editCoffee'
+       'coffee': 'coffee',
+       'coffee/new': 'editCoffee',
+       'coffee/edit/:id': 'editCoffee',
+       'rating': 'rating',
+       'rating/new': 'editRating',
+       'rating/edit/:id': 'editRating'
    }
 });
 
 var router = new Router();
 router.on('route:home', function(){
+    router.navigate("#/coffee", true);
+});
+router.on('route:coffee', function(){
     coffeeList.render();
 });
 router.on('route:editCoffee', function(id){
     editCoffee.render({id: id});
+});
+router.on('route:rating', function(){
+    ratingList.render();
+});
+router.on('route:editRating', function(id){
+    editRating.render({id: id});
 });
 
 Backbone.history.start();
