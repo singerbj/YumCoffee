@@ -36,11 +36,31 @@ var CoffeeList = Backbone.View.extend({
         var coffees = new Coffees();
         coffees.fetch({
             success: function(coffees){
-                this.coffees = coffees.toJSON();
+                window.coffees = _.sortBy(coffees.toJSON(), function(o) {
+                    return o.id;
+                });
                 var template = _.template($('#coffee-list-template').html());
                 that.$el.html(template);
             }
         });
+    },
+    events: {
+        'click .delete': 'deleteCoffee'
+    },
+    deleteCoffee: function(ev){
+        var coffeeid = parseInt($(ev.currentTarget)['0'].attributes['2'].value, 10);
+        var coffee = new Coffee({id: coffeeid});
+        var r = window.confirm("Are you sure?");
+        if(r) {
+            coffee.destroy({
+                success: function () {
+                    router.navigate('#/', {trigger: true});
+                },
+                error: function () {
+                    router.navigate('#/', {trigger: true});
+                }
+            });
+        }
     }
 });
 
@@ -50,10 +70,25 @@ var coffeeList = new CoffeeList();
 
 var EditCoffee = Backbone.View.extend({
     el: '.page',
-    render: function(){
+    reset: function(){
+        this.render();
+    },
+    render: function(options){
         var that = this;
-        var template = _.template($('#coffee-form-template').html());
-        that.$el.html(template);
+        if(options.id) {
+            var coffee = new Coffee({id: options.id});
+            coffee.fetch({
+                success: function(coffee) {
+                    window.coffee = coffee.toJSON()[0];
+                    var template = _.template($('#coffee-form-template').html());
+                    that.$el.html(template);
+                }
+            });
+        }else{
+            window.coffee = null;
+            var template = _.template($('#coffee-form-template').html());
+            that.$el.html(template);
+        }
     },
     events: {
         'submit .coffeeForm': 'saveCoffee'
@@ -62,11 +97,11 @@ var EditCoffee = Backbone.View.extend({
         var coffeeDetails = $(ev.currentTarget).serializeObject();
         var coffee = new Coffee();
         coffee.save(coffeeDetails, {
-            success: function(coffee){
-                router.navigate('', {trigger: true});
+            success: function(){
+                router.navigate('#/', {trigger: true});
             },
-            error: function(coffee){
-                router.navigate('', {trigger: true});
+            error: function(){
+                router.navigate('#/', {trigger: true});
             }
         });
         return false;
@@ -80,7 +115,8 @@ var editCoffee = new EditCoffee();
 var Router = Backbone.Router.extend({
    routes: {
        '': 'home',
-       'new': 'editCoffee'
+       'new': 'editCoffee',
+       'edit/:id': 'editCoffee'
    }
 });
 
@@ -88,8 +124,8 @@ var router = new Router();
 router.on('route:home', function(){
     coffeeList.render();
 });
-router.on('route:editCoffee', function(){
-    editCoffee.render();
+router.on('route:editCoffee', function(id){
+    editCoffee.render({id: id});
 });
 
 Backbone.history.start();

@@ -36,7 +36,7 @@
 
 
     <script type="text/template" id="coffee-list-template">
-        <a href="#/new" class="btn btn-primary pull-right">New Coffee</a>
+        <a href="#/new" class="btn btn-success">New Coffee</a>
         <table class="table striped">
             <thead>
             <tr>
@@ -50,7 +50,10 @@
             <tr>
                 <td><%- coffee.brand %></td>
                 <td><%- coffee.roast %></td>
-                <td></td>
+                <td>
+                    <a href="#/edit/<%=coffee.id %>" class="btn btn-default btn-sm">Edit</a>
+                    <a href="#/" class="btn btn-danger btn-sm delete" coffeeid="<%- coffee.id %>">Delete</a>
+                </td>
             </tr>
             <% }); %>
             </tbody>
@@ -59,19 +62,22 @@
 
     <script type="text/template" id="coffee-form-template">
         <form class="coffeeForm">
-            <legend>Create User</legend>
+            <legend><%= coffee ? 'Edit' : 'Add' %> Coffee</legend>
             <div class="form-group">
                 <label>Brand</label>
                 <br>
-                <input type="text" name="brand" />
+                <input class="form-control" type="text" name="brand" value="<%= coffee ? coffee.brand : '' %>"/>
             </div>
             <div class="form-group">
                 <label>Roast</label>
                 <br>
-                <input type="text" name="roast" />
+                <input class="form-control" type="text" name="roast" value="<%= coffee ? coffee.roast : '' %>"/>
             </div>
             <hr>
-            <button type="submit" class="btn">Create Coffee</button>
+            <% if(coffee){ %>
+                <input type="hidden" name="id" value="<%= coffee ? coffee.id : '' %>"/>
+            <% }; %>
+            <button type="submit" class="btn"><%= coffee ? 'Update' : 'Create' %> Coffee</button>
         </form>
     </script>
 
