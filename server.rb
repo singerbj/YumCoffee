@@ -22,7 +22,7 @@ configure do
         "( " +
             " id BIGSERIAL PRIMARY KEY, " + 
             " coffee_id bigint references coffee(id), " + 
-            " rating int, " +
+            " rating varchar(1), " +
             " comment varchar(1000) " +
         ");")
 

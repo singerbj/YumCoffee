@@ -44,7 +44,7 @@
             <tr>
                 <th>Brand</th>
                 <th>Roast</th>
-                <th>Ratings</th>
+                <th>Average Rating</th>
                 <th><a href="#/coffee/new" class="btn btn-success btn-sm">New Coffee</a></th>
             </tr>
             </thead>
@@ -54,12 +54,10 @@
                 <td><%- coffee.brand %></td>
                 <td><%- coffee.roast %></td>
                 <td>
-                        <% _.each(coffee.ratings, function(rating){ %>
-                            <% if(rating.rating){ %>
-                                <%- rating.rating + "/5: " + rating.comment %>
-                                <br>
-                            <% }; %>
-                        <% }); %>
+                    <% for(var i = 0; i < coffee.avgRating; i++){ %>
+                        <span class="glyphicon glyphicon-star"></span>
+                    <% } %>
+                            
                 </td>
                 <td>
                     <a href="#/coffee/edit/<%=coffee.id %>" class="btn btn-default btn-sm">Edit</a>
@@ -97,7 +95,7 @@
         <table class="table striped">
             <thead>
             <tr>
-                <th>Coffee_ID</th>
+                <th>Coffee</th>
                 <th>Rating</th>
                 <th>Comments</th>
                 <th><a href="#/rating/new" class="btn btn-success btn-sm">New Rating</a></th>
@@ -106,7 +104,9 @@
             <tbody>
             <% _.each(ratings, function(rating){ %>
             <tr>
-                <td><%- rating.coffee_id %></td>
+                <td>
+                    <%- rating.coffee.brand + " " + rating.coffee.roast %> Roast
+                </td>
                 <td>
                     <% for(var i = 0; i < rating.rating; i++){ %>
                         <span class="glyphicon glyphicon-star"></span>
@@ -127,14 +127,26 @@
         <form class="ratingForm">
             <legend><%= rating ? 'Edit' : 'Add' %> Rating</legend>
             <div class="form-group">
-                <label>Coffee_ID</label>
+                <label>Coffee</label>
                 <br>
-                <input class="form-control" type="text" name="coffee_id" value="<%= rating ? rating.coffee_id : '' %>"/>
+                <select class="form-control" type="text" name="coffee_id" value="<%= rating ? rating.coffee_id : '' %>">
+                    <% _.forEach(coffees, function(coffee){ %>
+                        <option value="<%= coffee.id %>" <%= rating && rating.coffee_id === coffee.id ? 'selected' : '' %>>
+                            <%= coffee.brand + " " + coffee.roast %> Roast
+                        </option>
+                    <% }); %>  
+                </select>
             </div>
             <div class="form-group">
                 <label>Rating</label>
                 <br>
-                <input class="form-control" type="text" name="rating" value="<%= rating ? rating.rating : '' %>"/>
+                <select class="form-control" type="text" name="rating">               
+                    <% _.forEach([1, 2, 3, 4, 5], function(i){ %>
+                        <option value="<%= i %>" <%= rating && rating.rating === (i + '') ? 'selected' : '' %>>
+                            <%= i %> Star<%= i < 2 ? '' : 's' %>
+                        </option>
+                    <% }); %>                 
+                </select>
             </div>
             <div class="form-group">
                 <label>Comments</label>
@@ -149,12 +161,6 @@
         </form>
     </script>
 
-    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore.js"></script>
-    <script src="js/backbone.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/q.js/1.1.2/q.js"></script>
-
-    <script src="js/myjs.js"></script>
-
+    <script data-main="main" src="lib/require.js"></script>
 </body>
 </html>
