@@ -21,7 +21,7 @@ require.config({
     }
 });
 
-require(['coffeeController', 'ratingController', 'router', 'backbone'],function(coffee, rating, router, backbone){
+require(['coffeeController', 'ratingController', 'router', 'backbone'],function(coffee, rating, router, Backbone){
 	router.on('route:home', function(){
         router.navigate("#/coffee", true);
     });
